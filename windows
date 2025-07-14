@@ -1,0 +1,29 @@
+import FreeSimpleGUI as sg
+
+def remoteorlocal():
+    remote = sg.Button("Remote Computer", key="remote")
+    local = sg.Button("Local Computer", key="local")
+    layout = [[remote],
+              [local]]
+    return layout
+
+def commandsremote():
+    gpupdates = sg.Button("GPUpdate", key="gpupdatebutton")
+    configactions = sg.Button("Config Actions", key="configactions")
+    printers = sg.Button("Printer Install", key="printers")
+    rename = sg.Button("Rename Computer", key="rename")
+    layout = [[gpupdates, configactions],
+              [printers, rename]]
+    return layout
+
+def gpupdate():
+    searchlabel = sg.Text("Type in the name or part of the name of a computer")
+    searchinput = sg.Input(tooltip="Go on, type something in", key="gp_searchbox")
+    searchbutton = sg.Button("Search!", key="gp_searchbutton", bind_return_key=True)
+
+    resultlistbox = sg.Listbox(values='', key="gp_results", enable_events=True, size=(45, 10))
+    gpupdatebutton = sg.Button("Run a GPUpdate!", key="gp_gpupdate")
+    layout = [[searchlabel],
+                           [searchinput, searchbutton],
+                           [resultlistbox, gpupdatebutton]]
+    return layout
