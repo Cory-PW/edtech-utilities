@@ -1,0 +1,57 @@
+import subprocess
+
+def searchad(pcname):
+    psoutput = subprocess.run(["powershell", "-Command",
+                               f"get-adcomputer -Filter \"Name -like \'*{pcname}*\'\" -Properties Name | Select Name -ExpandProperty Name 2>$null"],
+                              shell=True, text=True, capture_output=True)
+    output = psoutput.stdout
+    outputlist = output.split('\n')
+    return outputlist
+
+def pstoolsinstalllocal():
+    subprocess.run(["powershell", "-Command", r'Copy-Item "\\DIST-TECH-04\C$\Windows\System32\WindowsPowerShell\v1.0\PSTools\" -Destination "C:\Windows\System32\WindowsPowerShell\v1.0\" -Recurse -PassThru -ErrorAction SilentlyContinue'],
+                   shell=True, text=True, capture_output=True)
+    psoutput_local = subprocess.run(["powershell", "-Command", r'Test-Path -Path "C:\Windows\System32\WindowsPowerShell\v1.0\PSTools"'],
+                    shell=True, text=True, capture_output=True)
+    testdir = psoutput_local.stdout
+    return testdir
+
+def rsatchecker():
+    state_local = subprocess.run(["powershell", "-Command", r'Get-WindowsCapability -Name RSAT.Active* -Online | Select-Object -Property State'],
+                    shell=True, text=True, capture_output=True)
+    installedornot = state_local.stdout
+    if "Installed" in installedornot:
+        rsatstatus = True
+    else:
+        rsatstatus = False
+    return  rsatstatus
+
+def pstoolsinstallremote(pcname):
+    subprocess.run(["powershell", "-Command",
+                    rf'Copy-Item "\\DIST-TECH-04\C$\Windows\System32\WindowsPowerShell\v1.0\PSTools\" -Destination "\\{pcname}\C$\Windows\System32\WindowsPowerShell\v1.0\" -Recurse -PassThru -ErrorAction SilentlyContinue'],
+                   shell=True, text=True, capture_output=True)
+    pstoolsremote = subprocess.run(["powershell", "-Command", rf'Test-Path -Path "\\{pcname}\C$\Windows\System32\WindowsPowerShell\v1.0\PSTools"'],
+                    shell=True, text=True, capture_output=True)
+    if "True" in pstoolsremote.stdout:
+        pstools_remote_status = True
+    else:
+        pstools_remote_status = False
+    return pstools_remote_status
+
+def gpupdate(pcname):
+    gpupdate_output = subprocess.run(["powershell", "-Command", rf'cd "C:\Windows\System32\WindowsPowerShell\v1.0\PSTools"; .\Psexec -accepteula \\{pcname} -s -h powershell -command gpupdate /force'],
+                                     shell=True, text=True, capture_output=True)
+
+    if "Computer Policy update has completed successfully" in gpupdate_output.stdout:
+        gpupdate_status = True
+    else:
+        gpupdate_status = False
+    return gpupdate_status
+
+
+if __name__ == "__main__":
+    state_local = subprocess.run(
+        ["powershell", "-Command", r'Get-WindowsCapability -Name RSAT.Active* -Online | Select-Object -Property State'],
+        shell=True, text=True, capture_output=True)
+    rsat = state_local.stdout
+    print(rsat, "Printing")
