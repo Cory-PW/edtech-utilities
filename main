@@ -1,0 +1,106 @@
+import FreeSimpleGUI as sg
+import powershellfunctions
+import powershellwindows
+import os
+import sys
+
+sg.theme("Reddit")
+
+status = sg.StatusBar('Go for it, sport', text_color="Blue", size=(50,1), key="statusbar")
+
+
+window = sg.Window('Edtech Utilities',
+                   layout=[[sg.Column(powershellwindows.remoteorlocal(), visible=True, key="remoteorlocal"),
+                           sg.Column(powershellwindows.commandsremote(), visible=False, key="commandsremote"),
+                           sg.Column(powershellwindows.gpupdate(), visible=False, key='gpupdatewindow')],
+                           [status]],
+                   font='Courier')
+if powershellfunctions.rsatchecker():
+    pass
+else:
+    sg.popup("You don't have RSAT Tools installed, Add your computer to the software deployment in MECM and install it")
+    sys.exit()
+
+if os.path.isdir(r'C:\Windows\System32\WindowsPowerShell\v1.0\PSTools'):
+    sg.popup("Look at this guy, already having PSTools installed")
+else:
+    if sg.popup_yes_no(
+            'PSTools not found. Do you want to install? (hitting no will close the program - you need pstools, silly)') == 'Yes':
+        install_status = powershellfunctions.pstoolsinstalllocal()
+        if install_status:
+            sg.popup("PSTools has been installed. Enjoy!")
+        else:
+            sg.popup("PSTools was unable to be installed. Ask someone for a copy i guess lol")
+            sys.exit()
+
+    else:
+        sys.exit("Can't run the script if you don't have PSTools")
+while True:
+
+    event, values = window.read()
+    if event == sg.WIN_CLOSED or window.was_closed():
+        break
+    print(event)
+    print(values)
+    match event:
+        case "remote":
+            window['remoteorlocal'].update(visible=False)
+            window['commandsremote'].update(visible=True)
+            window['gpupdatewindow'].update(visible=False)
+            window.refresh()
+        case "local":
+            sg.popup("This section isn't ready yet :(")
+
+        #remote menu
+        case "gpupdatebutton":
+            window['gpupdatewindow'].update(visible=True)
+            window['remoteorlocal'].update(visible=False)
+            window['commandsremote'].update(visible=False)
+            window.refresh()
+        case "configactions":
+            sg.popup("Coming soon!!!")
+        case "printers":
+            sg.popup("Coming soon!!!")
+        case "rename":
+            sg.popup("Coming soon!!!")
+
+        #gpupdate window
+        case "gp_searchbutton":
+            try:
+                searching = values['gp_searchbox']
+                window['statusbar'].update(value='Searching for computers!')
+                window.refresh()
+                searchresults = powershellfunctions.searchad(searching)
+                window['gp_results'].update(values=searchresults)
+                window['statusbar'].update(value='Search Complete!')
+                window.refresh()
+                print(searchresults)
+
+            except IndexError:
+               sg.popup("I can't search if you don't give me anything to search for! Enter something in the 'Search' field")
+        case "gp_gpupdate":
+            try:
+                window['statusbar'].update(value='Checking for PSTools on remote computer')
+                window.refresh()
+                selectedpc = values['gp_results'][0]
+
+                if powershellfunctions.pstoolsinstallremote(selectedpc):
+                    sg.popup("PSTools successfully installed on target computer. Running GPUpdate now. This might take a few minutes")
+
+                else:
+                    sg.popup("It looks like PSTools wasn't able to be installed on target computer or target computer is not on.")
+                window['statusbar'].update(value='Running GPUpdate! This may take a minute... If the program goes all not responding, let it ride')
+                window.refresh()
+
+                if powershellfunctions.gpupdate(selectedpc):
+                    sg.popup("Gpupdate has successfully run.")
+                    window['statusbar'].update(value=f'GPUpdate successfully ran on {selectedpc}!')
+                    window.refresh()
+
+                else:
+                    sg.popup("GPupdate was not able to run, maybe the computer is offline?")
+
+            except IndexError:
+                sg.popup("You can't run a gpupdate on more than one computer. Them's the rules. Please select a computer")
+
+
